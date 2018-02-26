@@ -3,13 +3,19 @@ from Robinhood import Robinhood
 import numpy as np
 
 
+
 class Simulation:
     
-    def __init__(self, sim_length, tickers, strategies):
+    def __init__(self, sim_length, tickers, initial_investment, strategies):
         self.sim_length = sim_length
         self.tickers = tickers
+        self.initial_investment = initial_investment
         self.strategies = strategies
+        self.gen_strategies()
         self.load_prices()
+
+    def gen_strategies(self):
+        self.strategies = [s(self.initial_investment, self.tickers) for s in self.strategies]        
         
     def load_prices(self, interval='day'):
         
@@ -34,6 +40,8 @@ class Simulation:
         for day in list(range(self.sim_length)):
             history = self.full_market[self.sim_length - day:, :, :]
             market = self.full_market[(self.sim_length - day - 1), :, 0]
+            for strategy in self.strategies:
+                strategy.invest(history=history, market=market)
 
 
 class Strategy:
@@ -44,7 +52,6 @@ class Strategy:
         self.portfolio = {}
         self.value = cash
         self.gl = 0
-        self.load_hist()
 
     def purchase(self, ticker, price, shares):
         assert price * shares < self.cash, "purchase order too expensive"
@@ -65,10 +72,24 @@ class Strategy:
             
         self.cash += price * shares
         self.gl += price * shares
-        
-        
-        
+
+
 class Random(Strategy):
-    def act(self):
+
+    def __init__(self, *args, **kwargs):
+        self.name = 'Random'
+        super(Random, self).__init__(*args, **kwargs)
+    
+    def invest(self, history, market):
+        # Randomly choose a ticker
+        choice = self.tickers[np.random.randint(len(self.tickers))]
         
 
+
+# testing
+
+tickers = ['TWTR', 'GPRO']
+strategies = [Random, Random]
+
+test = Simulation(5, tickers, 50, strategies)
+test.sim()
