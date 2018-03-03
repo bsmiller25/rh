@@ -78,15 +78,11 @@ class Strategy:
 
 
 class Random(Strategy):
-
+    '''Choose a stock randomly'''
     def __init__(self, *args, **kwargs):
         self.name = 'Random'
         super(Random, self).__init__(*args, **kwargs)
 
-    def __str__(self):
-        return(self.name)
-    __repr__ = __str__
-    
     def invest(self, history, market):
         # Randomly choose a ticker
 
@@ -99,14 +95,44 @@ class Random(Strategy):
         # sell at end of day
         p_close = market[self.tickers.index(choice), 1]
         self.sell(choice, p_close, num_shares)
-        print('Bought: {} and new cash is {}'.format(choice, self.cash))
+
+    def __str__(self):
+        return(self.name)
+    __repr__ = __str__
+
+
+
+class BTFD(Strategy):
+    '''Buy choose the stock that performed worst yesterday'''
+    
+    def __init__(self, *args, **kwargs):
+        self.name = 'BTFD'
+        super(BTFD, self).__init__(*args, **kwargs)
+    
+    def invest(self, history, market):
+        # get yesterday's performance
+        perf = (history[0,:,1] - history[0,:,0]) / history[0,:,0]
+        choice = self.tickers[perf.argmin()]
+        
+        # purchase it
+        p_open = market[self.tickers.index(choice), 0]
+        num_shares = int(self.cash / p_open)
+        self.purchase(choice, p_open, num_shares)
+        
+        # sell at end of day
+        p_close = market[self.tickers.index(choice), 1]
+        self.sell(choice, p_close, num_shares)
+
+    def __str__(self):
+        return(self.name)
+    __repr__ = __str__
 
 
 # testing
 import pdb
 
 tickers = ['TWTR', 'GPRO']
-strategies = [Random]
+strategies = [Random, BTFD]
 
 test = Simulation(30, tickers, 50, strategies)
 test.sim()
