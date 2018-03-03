@@ -45,7 +45,7 @@ class Simulation:
 
     def results(self):
         res = {strategy: strategy.cash for strategy in self.strategies}
-        print(res)
+        return(res)
 
 
 class Strategy:
@@ -144,13 +144,3 @@ class RTW(Strategy):
         return(self.name)
     __repr__ = __str__
 
-
-# testing
-import pdb
-
-tickers = ['TWTR', 'GPRO']
-strategies = [Random, BTFD, RTW]
-
-test = Simulation(5, tickers, 50, strategies)
-test.sim()
-test.results()
