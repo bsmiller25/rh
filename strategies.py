@@ -39,9 +39,13 @@ class Simulation:
     def sim(self):
         for day in list(range(self.sim_length)):
             history = self.full_market[self.sim_length - day:, :, :]
-            market = self.full_market[(self.sim_length - day - 1), :, 0]
+            market = self.full_market[(self.sim_length - day - 1), :, :]
             for strategy in self.strategies:
                 strategy.invest(history=history, market=market)
+
+    def results(self):
+        res = {strategy: strategy.cash for strategy in self.strategies}
+        print(res)
 
 
 class Strategy:
@@ -54,7 +58,7 @@ class Strategy:
         self.gl = 0
 
     def purchase(self, ticker, price, shares):
-        assert price * shares < self.cash, "purchase order too expensive"
+        assert price * shares <= self.cash, "purchase order too expensive"
         
         if ticker in self.portfolio.keys():
             self.portfolio[ticker] += shares
@@ -71,7 +75,6 @@ class Strategy:
             self.portfolio.pop(ticker, None)
             
         self.cash += price * shares
-        self.gl += price * shares
 
 
 class Random(Strategy):
@@ -79,17 +82,32 @@ class Random(Strategy):
     def __init__(self, *args, **kwargs):
         self.name = 'Random'
         super(Random, self).__init__(*args, **kwargs)
+
+    def __str__(self):
+        return(self.name)
+    __repr__ = __str__
     
     def invest(self, history, market):
         # Randomly choose a ticker
+
+        # purchase it
         choice = self.tickers[np.random.randint(len(self.tickers))]
+        p_open = market[self.tickers.index(choice), 0]
+        num_shares = int(self.cash / p_open)
+        self.purchase(choice, p_open, num_shares)
         
+        # sell at end of day
+        p_close = market[self.tickers.index(choice), 1]
+        self.sell(choice, p_close, num_shares)
+        print('Bought: {} and new cash is {}'.format(choice, self.cash))
 
 
 # testing
+import pdb
 
 tickers = ['TWTR', 'GPRO']
-strategies = [Random, Random]
+strategies = [Random]
 
-test = Simulation(5, tickers, 50, strategies)
+test = Simulation(30, tickers, 50, strategies)
 test.sim()
+test.results()
