@@ -6,13 +6,18 @@ import numpy as np
 
 class Simulation:
     
-    def __init__(self, sim_length, tickers, initial_investment, strategies):
+    def __init__(self, sim_length, tickers, initial_investment, strategies, date_offset=0):
         self.sim_length = sim_length
         self.tickers = tickers
         self.initial_investment = initial_investment
         self.strategies = strategies
+        self.date_offset = date_offset
         self.gen_strategies()
         self.load_prices()
+
+        assert date_offset + sim_length < len(self.full_market[:,0,0]), \
+            "sim_length + date_offset must be < {}".format(len(self.full_market[:,0,0]))
+        
 
     def gen_strategies(self):
         self.strategies = [s(self.initial_investment, self.tickers) for s in self.strategies]        
@@ -38,8 +43,8 @@ class Simulation:
         
     def sim(self):
         for day in list(range(self.sim_length)):
-            history = self.full_market[self.sim_length - day:, :, :]
-            market = self.full_market[(self.sim_length - day - 1), :, :]
+            history = self.full_market[self.date_offset + self.sim_length - day:, :, :]
+            market = self.full_market[self.date_offset + (self.sim_length - day - 1), :, :]
             for strategy in self.strategies:
                 strategy.choose(history=history, market=market)
 
