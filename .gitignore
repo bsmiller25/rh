@@ -1,0 +1,21 @@
+# git ignore
+
+# Emacs
+.\#*
+\#*\#
+*~
+
+# Python
+
+__pycache__/
+*.py[cod]
+
+# virtualenv
+bin
+docs
+include
+lib
+share
+pip-selfcheck.json
+
+
