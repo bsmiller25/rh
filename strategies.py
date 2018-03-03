@@ -41,7 +41,7 @@ class Simulation:
             history = self.full_market[self.sim_length - day:, :, :]
             market = self.full_market[(self.sim_length - day - 1), :, :]
             for strategy in self.strategies:
-                strategy.invest(history=history, market=market)
+                strategy.choose(history=history, market=market)
 
     def results(self):
         res = {strategy: strategy.cash for strategy in self.strategies}
@@ -65,7 +65,7 @@ class Strategy:
         else:
             self.portfolio[ticker] = shares
 
-        self.cash -= price * shares
+        self.cash -= round(price * shares, 2)
 
     def sell(self, ticker, price, shares):
         assert shares <= self.portfolio[ticker], "not enough shares to sell"
@@ -74,20 +74,9 @@ class Strategy:
         if self.portfolio[ticker] == 0:
             self.portfolio.pop(ticker, None)
             
-        self.cash += price * shares
+        self.cash += round(price * shares, 2)
 
-
-class Random(Strategy):
-    '''Choose a stock randomly'''
-    def __init__(self, *args, **kwargs):
-        self.name = 'Random'
-        super(Random, self).__init__(*args, **kwargs)
-
-    def invest(self, history, market):
-        # Randomly choose a ticker
-
-        # purchase it
-        choice = self.tickers[np.random.randint(len(self.tickers))]
+    def invest(self, choice, market):
         p_open = market[self.tickers.index(choice), 0]
         num_shares = int(self.cash / p_open)
         self.purchase(choice, p_open, num_shares)
@@ -96,10 +85,24 @@ class Random(Strategy):
         p_close = market[self.tickers.index(choice), 1]
         self.sell(choice, p_close, num_shares)
 
+
+class Random(Strategy):
+    '''Choose a stock randomly'''
+    def __init__(self, *args, **kwargs):
+        self.name = 'Random'
+        super(Random, self).__init__(*args, **kwargs)
+
+    def choose(self, history, market):
+        # Randomly choose a ticker
+        choice = self.tickers[np.random.randint(len(self.tickers))]
+
+        # invest
+        self.invest(choice, market)
+        
+
     def __str__(self):
         return(self.name)
     __repr__ = __str__
-
 
 
 class BTFD(Strategy):
@@ -109,19 +112,33 @@ class BTFD(Strategy):
         self.name = 'BTFD'
         super(BTFD, self).__init__(*args, **kwargs)
     
-    def invest(self, history, market):
+    def choose(self, history, market):
         # get yesterday's performance
         perf = (history[0,:,1] - history[0,:,0]) / history[0,:,0]
         choice = self.tickers[perf.argmin()]
         
-        # purchase it
-        p_open = market[self.tickers.index(choice), 0]
-        num_shares = int(self.cash / p_open)
-        self.purchase(choice, p_open, num_shares)
+        # invest
+        self.invest(choice, market)
+
+    def __str__(self):
+        return(self.name)
+    __repr__ = __str__
+
+
+class RTW(Strategy):
+    '''Buy choose the stock that performed best yesterday'''
+    
+    def __init__(self, *args, **kwargs):
+        self.name = 'RTW'
+        super(RTW, self).__init__(*args, **kwargs)
+    
+    def choose(self, history, market):
+        # get yesterday's performance
+        perf = (history[0,:,1] - history[0,:,0]) / history[0,:,0]
+        choice = self.tickers[perf.argmax()]
         
-        # sell at end of day
-        p_close = market[self.tickers.index(choice), 1]
-        self.sell(choice, p_close, num_shares)
+        # invest
+        self.invest(choice, market)
 
     def __str__(self):
         return(self.name)
@@ -132,8 +149,8 @@ class BTFD(Strategy):
 import pdb
 
 tickers = ['TWTR', 'GPRO']
-strategies = [Random, BTFD]
+strategies = [Random, BTFD, RTW]
 
-test = Simulation(30, tickers, 50, strategies)
+test = Simulation(5, tickers, 50, strategies)
 test.sim()
 test.results()
