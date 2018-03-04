@@ -1,7 +1,7 @@
 '''Investment Strategies'''
 from Robinhood import Robinhood
 import numpy as np
-
+import pdb
 
 
 class Simulation:
@@ -27,17 +27,28 @@ class Simulation:
     def load_prices(self, interval='day'):
         
         trader = Robinhood()
-        self.ticker_prices = trader.get_historical_quotes(self.tickers,
-                                                   interval='day',
-                                                   span='year')
-        self.full_market = np.zeros((len(self.ticker_prices['results'][0]['historicals']), # day dim
+
+        # get prices
+        # note: api takes 75 or fewer tickers
+        self.ticker_prices = []
+        segments = list(range(0, len(self.tickers), 75))
+        if segments[-1] != len(self.tickers):
+            segments.append(len(self.tickers))
+
+        for i in list(range(1, len(segments))):
+            tp = trader.get_historical_quotes(self.tickers[segments[i-1]:segments[i]],
+                                                              interval='day',
+                                                              span='year')['results']
+            self.ticker_prices = self.ticker_prices + tp
+            
+        self.full_market = np.zeros((len(self.ticker_prices[0]['historicals']), # day dim
                                      len(self.tickers), # ticker dim
                                      2)) # var dim (open, close)
         self.len_hist = self.full_market.shape[0]
         # for each day
         for day in list(range(self.len_hist)):
             for ticker in list(range(len(self.tickers))):
-                day_ticker_p = self.ticker_prices['results'][ticker]['historicals']\
+                day_ticker_p = self.ticker_prices[ticker]['historicals']\
                                [self.len_hist - day - 1]
                 p_open = day_ticker_p['open_price']
                 p_close = day_ticker_p['close_price']
@@ -51,7 +62,7 @@ class Simulation:
                 strategy.choose(history=history, market=market)
 
     def results(self):
-        res = {strategy: strategy.cash for strategy in self.strategies}
+        res = {strategy: round(strategy.cash, 2) for strategy in self.strategies}
         return(res)
 
 
@@ -100,13 +111,16 @@ class Random(Strategy):
         super(Random, self).__init__(*args, **kwargs)
 
     def choose(self, history, market):
-        # Randomly choose a ticker
-        choice = self.tickers[np.random.randint(len(self.tickers))]
-
+        # Randomly choose a ticker and make sure we can afford at least one
+        choosing = True
+        while choosing:
+            choice = self.tickers[np.random.randint(len(self.tickers))]
+            if market[self.tickers.index(choice), 0] < self.cash:
+                choosing = False
+        
         # invest
         self.invest(choice, market)
         
-
     def __str__(self):
         return(self.name)
     __repr__ = __str__
@@ -126,8 +140,17 @@ class BTFD(Strategy):
     def choose(self, history, market):
         # get yesterday's performance
         perf = (history[0,:,1] - history[self.dip_len,:,0]) / history[self.dip_len,:,0]
-        choice = self.tickers[perf.argmin()]
-        
+
+        # choose and make sure we can afford at least one
+        choosing = True
+        worst = 0
+        while choosing:
+            choice = self.tickers[perf.argsort()[worst]]
+            if market[self.tickers.index(choice), 0] < self.cash:
+                choosing = False
+            else:
+                worst += 1
+                
         # invest
         self.invest(choice, market)
 
@@ -150,7 +173,16 @@ class Momentum(Strategy):
     def choose(self, history, market):
         # get yesterday's performance
         perf = (history[0,:,1] - history[self.mo_len,:,0]) / history[self.mo_len,:,0]
-        choice = self.tickers[perf.argmax()]
+
+        # choose and make sure we can afford at least one
+        choosing = True
+        best = -1
+        while choosing:
+            choice = self.tickers[perf.argsort()[best]]
+            if market[self.tickers.index(choice), 0] < self.cash:
+                choosing = False
+            else:
+                best -= 1
         
         # invest
         self.invest(choice, market)

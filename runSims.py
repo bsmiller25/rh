@@ -1,9 +1,12 @@
 from strategies import *
+import finsymbols
 
 # sim parameters
-tickers = ['TWTR', 'GPRO']
 sim_length = 10
 cash = 50
+sp500 = finsymbols.get_sp500_symbols()
+tickers = [ticker['symbol'] for ticker in sp500]
+
 strategies = [(Random, dict()),
               (BTFD, dict()),
               (Momentum, dict()),
