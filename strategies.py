@@ -17,11 +17,13 @@ class Simulation:
 
         assert date_offset + sim_length < len(self.full_market[:,0,0]), \
             "sim_length + date_offset must be < {}".format(len(self.full_market[:,0,0]))
+              
         
-
     def gen_strategies(self):
-        self.strategies = [s(self.initial_investment, self.tickers) for s in self.strategies]        
-        
+        self.strategies = [s[0](cash=self.initial_investment,
+                                tickers=self.tickers,
+                                **s[1]) for s in self.strategies]
+
     def load_prices(self, interval='day'):
         
         trader = Robinhood()
@@ -113,13 +115,17 @@ class Random(Strategy):
 class BTFD(Strategy):
     '''Buy choose the stock that performed worst yesterday'''
     
-    def __init__(self, *args, **kwargs):
-        self.name = 'BTFD'
+    def __init__(self, dip_len=None, *args, **kwargs):
+        if not dip_len:
+            self.dip_len = 0
+        else:
+            self.dip_len = dip_len
+        self.name = 'BTFD' + '-{}'.format(self.dip_len)
         super(BTFD, self).__init__(*args, **kwargs)
     
     def choose(self, history, market):
         # get yesterday's performance
-        perf = (history[0,:,1] - history[0,:,0]) / history[0,:,0]
+        perf = (history[0,:,1] - history[self.dip_len,:,0]) / history[self.dip_len,:,0]
         choice = self.tickers[perf.argmin()]
         
         # invest
@@ -130,16 +136,20 @@ class BTFD(Strategy):
     __repr__ = __str__
 
 
-class RTW(Strategy):
+class Momentum(Strategy):
     '''Buy choose the stock that performed best yesterday'''
     
-    def __init__(self, *args, **kwargs):
-        self.name = 'RTW'
-        super(RTW, self).__init__(*args, **kwargs)
+    def __init__(self, mo_len=None, *args, **kwargs):
+        if not mo_len:
+            self.mo_len = 0
+        else:
+            self.mo_len = mo_len
+        self.name = 'Momentum' + '-{}'.format(self.mo_len)
+        super(Momentum, self).__init__(*args, **kwargs)
     
     def choose(self, history, market):
         # get yesterday's performance
-        perf = (history[0,:,1] - history[0,:,0]) / history[0,:,0]
+        perf = (history[0,:,1] - history[self.mo_len,:,0]) / history[self.mo_len,:,0]
         choice = self.tickers[perf.argmax()]
         
         # invest
