@@ -1,4 +1,5 @@
-from strategies import *
+from simulation import *
+from strategies.strategies import *
 import finsymbols
 
 # sim parameters
