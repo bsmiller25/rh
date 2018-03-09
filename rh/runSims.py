@@ -1,5 +1,4 @@
-from simulation import *
-from strategies.strategies import *
+import rh
 import finsymbols
 
 # sim parameters
@@ -8,14 +7,14 @@ cash = 50
 sp500 = finsymbols.get_sp500_symbols()
 tickers = [ticker['symbol'] for ticker in sp500]
 
-strategies = [(Random, dict()),
-              (BTFD, dict()),
-              (Momentum, dict()),
-              (BTFD, dict(dip_len=5)),
-              (Momentum, dict(mo_len=5)),]
+strategies = [(rh.strategies.Random, dict()),
+              (rh.strategies.BTFD, dict()),
+              (rh.strategies.Momentum, dict()),
+              (rh.strategies.BTFD, dict(dip_len=5)),
+              (rh.strategies.Momentum, dict(mo_len=5)),]
 
 
-sim = Simulation(sim_length, tickers, 50, strategies)
+sim = rh.Simulation(sim_length, tickers, 50, strategies)
 sim.sim()
 print(sim.results())
 
