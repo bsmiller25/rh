@@ -45,14 +45,18 @@ class Simulation:
                                      len(self.tickers), # ticker dim
                                      2)) # var dim (open, close)
         self.len_hist = self.full_market.shape[0]
+        
         # for each day
-        for day in list(range(self.len_hist)):
+        for day in list(range((self.len_hist - 1))):
             for ticker in list(range(len(self.tickers))):
-                day_ticker_p = self.ticker_prices[ticker]['historicals']\
-                               [self.len_hist - day - 1]
-                p_open = day_ticker_p['open_price']
-                p_close = day_ticker_p['close_price']
-                self.full_market[day][ticker] = [p_open, p_close]
+                if self.ticker_prices[ticker]['historicals']:
+                    day_ticker_p = self.ticker_prices[ticker]['historicals']\
+                                   [self.len_hist - 1 - day]
+                    p_open = day_ticker_p['open_price']
+                    p_close = day_ticker_p['close_price']
+                    self.full_market[day][ticker] = [p_open, p_close]
+                else:
+                    self.full_market[day][ticker] = [None, None]
         
     def sim(self):
         for day in list(range(self.sim_length)):
