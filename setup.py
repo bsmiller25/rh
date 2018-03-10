@@ -8,6 +8,7 @@ setup(name='rh',
       author_email='bsmiller25@gmail.com',
       packages=['rh'],
       install_requires=[
+          'numpy',
           'Robinhood',
           ],
       dependency_links=['https://github.com/Jamonek/Robinhood/tarball/master#egg=Robinhood-1.0.1'],
