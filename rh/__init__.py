@@ -1,2 +1,2 @@
 from .simulation import Simulation
-from .strategies import strategies
+from . import strategies
